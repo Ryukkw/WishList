@@ -10,40 +10,40 @@ Structured approach derived from [WishList_Spec.md](./WishList_Spec.md). Follow 
 
 ### 1.1 Project initialization
 
-- [ ] Create Next.js 14 project with TypeScript, Tailwind CSS, ESLint.
-- [ ] Create FastAPI project in `/backend` with async SQLAlchemy + PostgreSQL.
-- [ ] Add `docker-compose.yml`: services for `postgres`, `backend`, `frontend`.
-- [ ] Create `.env.example` with: `DATABASE_URL`, `SECRET_KEY`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `NEXT_PUBLIC_API_URL`, Google OAuth client ID/secret, etc.
+- [x] Create Next.js 14 project with TypeScript, Tailwind CSS, ESLint.
+- [x] Create FastAPI project in `/backend` with async SQLAlchemy + PostgreSQL.
+- [x] Add `docker-compose.yml`: services for `postgres`, `backend`, `frontend`.
+- [x] Create `.env.example` with: `DATABASE_URL`, `SECRET_KEY`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `NEXT_PUBLIC_API_URL`, Google OAuth client ID/secret, etc.
 
 ### 1.2 Database schema
 
-- [ ] **users:** `id`, `email`, `password_hash`, `name`, `avatar_url`, `created_at`.
-- [ ] **wishlists:** `id`, `user_id`, `title`, `slug`, `description`, `event_date`, `is_public`, `created_at`.
-- [ ] **wishlist_items:** `id`, `wishlist_id`, `title`, `url`, `price`, `image_url`, `description`, `type` (solo | group), `target_amount`, `position`, `status` (active | deleted), `created_at`.
-- [ ] **reservations:** `id`, `item_id`, `guest_name`, `guest_identifier`, `created_at`.
-- [ ] **contributions:** `id`, `item_id`, `guest_name`, `guest_identifier`, `amount`, `created_at`.
-- [ ] Add indexes: `wishlists.slug`, `wishlist_items.wishlist_id`.
-- [ ] Set up Alembic; create and run initial migration.
+- [x] **users:** `id`, `email`, `password_hash`, `name`, `avatar_url`, `created_at`.
+- [x] **wishlists:** `id`, `user_id`, `title`, `slug`, `description`, `event_date`, `is_public`, `created_at`.
+- [x] **wishlist_items:** `id`, `wishlist_id`, `title`, `url`, `price`, `image_url`, `description`, `type` (solo | group), `target_amount`, `position`, `status` (active | deleted), `created_at`.
+- [x] **reservations:** `id`, `item_id`, `guest_name`, `guest_identifier`, `created_at`.
+- [x] **contributions:** `id`, `item_id`, `guest_name`, `guest_identifier`, `amount`, `created_at`.
+- [x] Add indexes: `wishlists.slug`, `wishlist_items.wishlist_id`.
+- [x] Set up Alembic; create and run initial migration.
 
 ### 1.3 Authentication
 
-- [ ] Implement NextAuth.js: Credentials provider (email + bcrypt), Google OAuth.
-- [ ] JWT sessions in httpOnly cookies; `/api/auth/*` routes.
-- [ ] Middleware: protect `/dashboard/*` (redirect unauthenticated to login).
-- [ ] Backend or Next.js: `POST /api/auth/register` (email, password → create user, return session).
-- [ ] After registration → redirect to dashboard (not landing).
+- [x] Implement NextAuth.js: Credentials provider (email + bcrypt), Google OAuth.
+- [x] JWT sessions in httpOnly cookies; `/api/auth/*` routes.
+- [x] Middleware: protect `/dashboard/*` (redirect unauthenticated to login).
+- [x] Backend or Next.js: `POST /api/auth/register` (email, password → create user, return session).
+- [x] After registration → redirect to dashboard (not landing).
 
 ### 1.4 Owner API (FastAPI)
 
-- [ ] `POST /api/wishlists` — create wishlist; auto-generate slug from title + random suffix.
-- [ ] `GET /api/wishlists` — list current user's wishlists (JWT required).
-- [ ] `PUT /api/wishlists/:id` — update title, description, event_date; verify ownership.
-- [ ] `DELETE /api/wishlists/:id` — soft delete; verify ownership.
-- [ ] `POST /api/wishlists/:id/items` — add item; verify ownership.
-- [ ] `PUT /api/wishlists/:id/items/:item_id` — edit item; verify ownership.
-- [ ] `DELETE /api/wishlists/:id/items/:item_id` — soft delete item (keep contributions); verify ownership.
-- [ ] `PATCH /api/wishlists/:id/items/reorder` — accept positions array; verify ownership.
-- [ ] All endpoints: JWT auth + ownership checks.
+- [x] `POST /api/wishlists` — create wishlist; auto-generate slug from title + random suffix.
+- [x] `GET /api/wishlists` — list current user's wishlists (JWT required).
+- [x] `PUT /api/wishlists/:id` — update title, description, event_date; verify ownership.
+- [x] `DELETE /api/wishlists/:id` — delete; verify ownership.
+- [x] `POST /api/wishlists/:id/items` — add item; verify ownership.
+- [x] `PUT /api/wishlists/:id/items/:item_id` — edit item; verify ownership.
+- [x] `DELETE /api/wishlists/:id/items/:item_id` — soft delete item (keep contributions); verify ownership.
+- [x] `PATCH /api/wishlists/:id/items/reorder` — accept positions array; verify ownership.
+- [x] All endpoints: JWT auth + ownership checks.
 
 ---
 
@@ -53,20 +53,20 @@ Structured approach derived from [WishList_Spec.md](./WishList_Spec.md). Follow 
 
 ### 2.1 Public API (no auth for read; auth for owner view)
 
-- [ ] `GET /api/public/:slug` — wishlist + items + aggregated stats only (no guest names). For owner: use this or dedicated owner endpoint so owner never sees who reserved/contributed.
-- [ ] `GET /api/public/:slug/social` — for guest view: show other guests' names for contributions (to avoid duplicate names); never expose this data to owner. Use `X-Guest-Token` (or similar) to identify guest.
-- [ ] `POST /api/public/:slug/items/:item_id/reserve` — body: `guest_name`, `guest_identifier`.
-- [ ] `DELETE /api/public/:slug/items/:item_id/reserve` — body: `guest_identifier`.
-- [ ] `POST /api/public/:slug/items/:item_id/contribute` — body: `guest_name`, `guest_identifier`, `amount`.
-- [ ] Owner-specific endpoint: e.g. `GET /api/lists/:id/owner` — aggregated data only (counts, %, no names).
+- [x] `GET /api/public/:slug` — wishlist + items + aggregated stats only (no guest names). For owner: use this or dedicated owner endpoint so owner never sees who reserved/contributed.
+- [x] `GET /api/public/:slug/social` — for guest view: show other guests' names for contributions (to avoid duplicate names); never expose this data to owner. Use `X-Guest-Token` (or similar) to identify guest.
+- [x] `POST /api/public/:slug/items/:item_id/reserve` — body: `guest_name`, `guest_identifier`.
+- [x] `DELETE /api/public/:slug/items/:item_id/reserve` — body: `guest_identifier`.
+- [x] `POST /api/public/:slug/items/:item_id/contribute` — body: `guest_name`, `guest_identifier`, `amount`.
+- [x] Owner-specific endpoint: e.g. `GET /api/lists/:id/owner` — aggregated data only (counts, %, no names). (Owner uses existing `GET /api/wishlists/:id`.)
 
 ### 2.2 Autofill by URL (scraper)
 
-- [ ] `POST /api/scrape` — body: `{ url }`.
-- [ ] Use httpx (timeout 5s, browser-like User-Agent); extract: `og:title` or `<title>`, `og:image`, `og:description`.
-- [ ] Try price: `meta[property="product:price:amount"]`, JSON-LD schema.org/Product, regex for ₽/$/€.
-- [ ] Return `{ title, image_url, price, description }`; partial data OK; graceful errors.
-- [ ] Cache in Redis or in-memory LRU (e.g. 1 hour).
+- [x] `POST /api/scrape` — body: `{ url }`.
+- [x] Use httpx (timeout 5s, browser-like User-Agent); extract: `og:title` or `<title>`, `og:image`, `og:description`.
+- [x] Try price: `meta[property="product:price:amount"]`, JSON-LD schema.org/Product, regex for ₽/$/€.
+- [x] Return `{ title, image_url, price, description }`; partial data OK; graceful errors.
+- [x] Cache in Redis or in-memory LRU (e.g. 1 hour).
 
 ---
 

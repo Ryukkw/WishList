@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+.next/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Build / IDE
+out/
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Debug
+npm-debug.log*
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Alembic
+backend/alembic/versions/*.pyc
