@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import get_current_user, get_db
 from app.models import User, Wishlist, WishlistItem, Reservation, Contribution
+from app.websocket import manager as ws_manager
 from app.models.wishlist import ItemStatus, ItemType
 from app.schemas.wishlist import (
     WishlistCreate,
@@ -311,13 +312,14 @@ async def delete_item(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
-    await get_wishlist_owned(wishlist_id, current_user, db)
+    wl = await get_wishlist_owned(wishlist_id, current_user, db)
     result = await db.execute(select(WishlistItem).where(WishlistItem.id == item_id, WishlistItem.wishlist_id == wishlist_id))
     item = result.scalar_one_or_none()
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
     item.status = ItemStatus.deleted
     await db.commit()
+    await ws_manager.broadcast(wl.slug, {"type": "item_deleted", "item_id": item_id})
 
 
 @router.patch("/{wishlist_id}/items/reorder", status_code=status.HTTP_204_NO_CONTENT)

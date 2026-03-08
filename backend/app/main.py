@@ -1,8 +1,9 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.routers import auth, wishlists, public, scrape
+from app.websocket import manager as ws_manager
 
 app = FastAPI(title="WishList API", version="0.1.0")
 
@@ -23,3 +24,15 @@ app.include_router(scrape.router)
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.websocket("/ws/list/{slug}")
+async def websocket_list(websocket: WebSocket, slug: str):
+    await ws_manager.connect(slug, websocket)
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        pass
+    finally:
+        ws_manager.disconnect(slug, websocket)

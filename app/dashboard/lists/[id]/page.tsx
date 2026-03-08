@@ -2,6 +2,8 @@ import { getServerSession } from "next-auth";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { authOptions } from "../../../api/auth/[...nextauth]/route";
+import { WishlistEditorClient } from "./WishlistEditorClient";
+import { Button } from "@/components/ui";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -16,38 +18,64 @@ export default async function WishlistEditorPage({
   if (!token) redirect("/auth/signin?callbackUrl=/dashboard");
 
   const { id } = await params;
-  const res = await fetch(`${API_URL}/api/wishlists/${id}`, {
-    headers: { Authorization: `Bearer ${token}` },
-    cache: "no-store",
-  });
-  if (!res.ok) {
-    if (res.status === 404) notFound();
+  const [wlRes, itemsRes] = await Promise.all([
+    fetch(`${API_URL}/api/wishlists/${id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    }),
+    fetch(`${API_URL}/api/wishlists/${id}/items`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    }),
+  ]);
+  if (!wlRes.ok) {
+    if (wlRes.status === 404) notFound();
     redirect("/dashboard");
   }
-  const wishlist = (await res.json()) as {
+  const wishlist = (await wlRes.json()) as {
     id: number;
     title: string;
     slug: string;
     description: string | null;
     event_date: string | null;
   };
+  const items = itemsRes.ok
+    ? ((await itemsRes.json()) as {
+        id: number;
+        title: string;
+        url: string | null;
+        price: number | string | null;
+        image_url: string | null;
+        type: string;
+        target_amount: number | string | null;
+        position: number;
+        status: string;
+        reservation_count: number;
+        contribution_total: number | string | null;
+        contribution_percentage: number | null;
+      }[])
+    : [];
 
   return (
-    <main className="min-h-screen p-6">
-      <header className="flex justify-between items-center mb-6">
-        <Link href="/dashboard" className="text-indigo-600 hover:underline">
-          ← Дашборд
-        </Link>
-        <span className="text-sm text-gray-600">{session.user?.email}</span>
+    <main className="min-h-screen bg-cream">
+      <header className="border-b border-charcoal/8 bg-white/80 backdrop-blur">
+        <div className="max-w-4xl mx-auto px-6 py-4 flex justify-between items-center">
+          <Link href="/dashboard" className="text-coral hover:underline font-sans text-sm">
+            ← Дашборд
+          </Link>
+          <span className="text-sm text-charcoal/60 font-sans">{session.user?.email}</span>
+        </div>
       </header>
-      <h1 className="text-xl font-bold mb-2">{wishlist.title}</h1>
-      <p className="text-sm text-gray-500 mb-4">
-        Ссылка для друзей:{" "}
-        <span className="font-mono text-gray-700">
-          {process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/list/{wishlist.slug}
-        </span>
-      </p>
-      <p className="text-gray-600">Здесь будет редактор позиций (добавление, перетаскивание).</p>
+
+      <div className="max-w-4xl mx-auto px-6 py-8">
+        <WishlistEditorClient
+          wishlistId={wishlist.id}
+          slug={wishlist.slug}
+          initialTitle={wishlist.title}
+          initialItems={items}
+          token={token}
+        />
+      </div>
     </main>
   );
 }

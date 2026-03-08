@@ -120,7 +120,7 @@ async def scrape_url(url: str) -> dict:
             resp.raise_for_status()
             html = resp.text
     except Exception:
-        _cache_set(normalized, result)
+        # Don't cache failures so user can retry
         return result
 
     soup = BeautifulSoup(html, "html.parser")

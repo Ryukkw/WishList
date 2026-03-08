@@ -76,17 +76,17 @@ Structured approach derived from [WishList_Spec.md](./WishList_Spec.md). Follow 
 
 ### 3.1 Design system
 
-- [ ] Fonts: Playfair Display (headings), DM Sans (body) — Google Fonts.
-- [ ] Colors: cream `#FAF7F2`, charcoal `#1C1C1E`, coral `#E8604A`, sage `#8BAF8B`; extend Tailwind config.
-- [ ] Components in `/components/ui/`: Button (primary/secondary/ghost), Card, Modal, Input, Badge, ProgressBar, Avatar, Spinner.
-- [ ] Subtle animations: card hover lift, button press.
+- [x] Fonts: Playfair Display (headings), DM Sans (body) — Google Fonts.
+- [x] Colors: cream `#FAF7F2`, charcoal `#1C1C1E`, coral `#E8604A`, sage `#8BAF8B`; extend Tailwind config.
+- [x] Components in `/components/ui/`: Button (primary/secondary/ghost), Card, Modal, Input, Badge, ProgressBar, Avatar, Spinner.
+- [x] Subtle animations: card hover lift, button press.
 
 ### 3.2 Pages
 
-- [ ] **Landing** `/app/page.tsx`: Hero “Вишлисты, которые не портят сюрприз”; 3 explainer blocks; CTA “Создать вишлист” (→ register if not authed).
-- [ ] **Dashboard** `/app/dashboard/page.tsx`: Header (avatar, logout), “Новый вишлист”, grid of wishlist cards (title, event date, item count, reserved count); empty state with illustration + “Создай свой первый список…”.
-- [ ] **Wishlist editor** `/app/dashboard/lists/[id]/page.tsx`: Editable title; share (copy link + QR); add item form + “Заполнить автоматически” (scrape); drag-to-reorder list; per item: image, title, price, type badge, aggregated status; owner sees “X зарезервировано”, “Собрано Y%” only (no names); actions: edit, delete (confirm if has contributions).
-- [ ] **Public view** `/app/list/[slug]/page.tsx`: Header (wishlist name, event date); guest name prompt (localStorage) “Как тебя зовут?”; item grid with status; free → “Забираю себе”; group → “Скинуться” + progress bar; reserved → “Уже занят” / “Ты забрал(а)”; deleted item notice; realtime updates (highlight changed card).
+- [x] **Landing** `/app/page.tsx`: Hero “Вишлисты, которые не портят сюрприз”; 3 explainer blocks; CTA “Создать вишлист” (→ register if not authed).
+- [x] **Dashboard** `/app/dashboard/page.tsx`: Header (avatar, logout), “Новый вишлист”, grid of wishlist cards (title, event date, item count, reserved count); empty state with illustration + “Создай свой первый список…”.
+- [x] **Wishlist editor** `/app/dashboard/lists/[id]/page.tsx`: Editable title; share (copy link + QR); add item form + “Заполнить автоматически” (scrape); drag-to-reorder list; per item: image, title, price, type badge, aggregated status; owner sees “X зарезервировано”, “Собрано Y%” only (no names); actions: edit, delete (confirm if has contributions).
+- [x] **Public view** `/app/list/[slug]/page.tsx`: Header (wishlist name, event date); guest name prompt (localStorage) “Как тебя зовут?”; item grid with status; free → “Забираю себе”; group → “Скинуться” + progress bar; reserved → “Уже занят” / “Ты забрал(а)”; deleted item notice; realtime updates (highlight changed card).
 
 ---
 
@@ -94,11 +94,11 @@ Structured approach derived from [WishList_Spec.md](./WishList_Spec.md). Follow 
 
 **Goal:** All viewers of a list see updates without refresh.
 
-- [ ] WebSocket: `WS /ws/list/:slug` (FastAPI or Supabase Realtime).
-- [ ] ConnectionManager: track connections per slug; broadcast to room on events.
-- [ ] Events: `gift_reserved`, `gift_unreserved`, `contribution_added`, `item_deleted` (payloads as in spec).
-- [ ] Client: custom hook `useWishlistRealtime(slug)`; auto-reconnect with exponential backoff.
-- [ ] UI: animate card updates (e.g. flash) when event received; multi-tab stays in sync.
+- [x] WebSocket: `WS /ws/list/:slug` (FastAPI or Supabase Realtime).
+- [x] ConnectionManager: track connections per slug; broadcast to room on events.
+- [x] Events: `gift_reserved`, `gift_unreserved`, `contribution_added`, `item_deleted` (payloads as in spec).
+- [x] Client: custom hook `useWishlistRealtime(slug)`; auto-reconnect with exponential backoff.
+- [x] UI: animate card updates (e.g. flash) when event received; multi-tab stays in sync.
 
 ---
 
@@ -108,20 +108,20 @@ Structured approach derived from [WishList_Spec.md](./WishList_Spec.md). Follow 
 
 ### 5.1 Modals
 
-- [ ] **ReserveModal:** “Забрать подарок себе”; name (prefill from localStorage); confirm; success → confetti; if same guest reserved → “Освободить”.
-- [ ] **ContributeModal:** “Скинуться”; name, amount (₽); progress “X₽ из Y₽”; show other contributors’ names (not amounts); success → progress animation.
-- [ ] **DeleteItemModal (owner):** If has contributions → warning “друзья уже скидываются…”; “Отменить” / “Всё равно удалить”.
-- [ ] **CreateWishlistModal:** Title; event type (🎂/🎄/💍/✨); optional event date; optional description.
+- [x] **ReserveModal:** “Забрать подарок себе”; name (prefill from localStorage); confirm; success → confetti; if same guest reserved → “Освободить”.
+- [x] **ContributeModal:** “Скинуться”; name, amount (₽); progress “X₽ из Y₽”; show other contributors’ names (not amounts); success → progress animation.
+- [x] **DeleteItemModal (owner):** If has contributions → warning “друзья уже скидываются…”; “Отменить” / “Всё равно удалить”.
+- [x] **CreateWishlistModal:** Title; event type (🎂/🎄/💍/✨); optional event date; optional description.
 
 ### 5.2 Edge cases (from spec §12)
 
-- [ ] Reserve race: already reserved → “Кто-то только что забрал этот подарок” + refresh.
-- [ ] Contribution over goal: allow; show “100%+” with 🎉.
-- [ ] Item deleted while guest has it open: WS → show deletion notice; disable reserve/contribute.
-- [ ] Guest name collision: use `guest_identifier` (e.g. UUID in localStorage) for dedup; display name for UI only.
-- [ ] Owner visits own public link: show banner “Ты смотришь как тебя видят гости”.
-- [ ] Empty public list: “Список пока пуст — именинник скоро добавит желания 🎁”.
-- [ ] Offline/WS disconnect: “обновляется…” indicator; silent reconnect.
+- [x] Reserve race: already reserved → “Кто-то только что забрал этот подарок” + refresh.
+- [x] Contribution over goal: allow; show “100%+” with 🎉.
+- [x] Item deleted while guest has it open: WS → show deletion notice; disable reserve/contribute.
+- [x] Guest name collision: use `guest_identifier` (e.g. UUID in localStorage) for dedup; display name for UI only.
+- [x] Owner visits own public link: show banner “Ты смотришь как тебя видят гости”.
+- [x] Empty public list: “Список пока пуст — именинник скоро добавит желания 🎁”.
+- [x] Offline/WS disconnect: “обновляется…” indicator; silent reconnect.
 
 ---
 

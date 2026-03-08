@@ -5,10 +5,11 @@ from fastapi import APIRouter, Depends, Header, HTTPException
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.auth import get_db, get_current_user_optional
+from app.auth import get_db, get_current_user, get_current_user_optional
 from app.models import User, Wishlist, WishlistItem, Reservation, Contribution
 from app.models.wishlist import ItemStatus, ItemType
 from app.schemas.public import ReserveRequest, UnreserveRequest, ContributeRequest
+from app.websocket import manager as ws_manager
 
 router = APIRouter(prefix="/api/public", tags=["public"])
 
@@ -90,6 +91,20 @@ async def _get_item_for_wishlist(
     if not item:
         raise HTTPException(status_code=404, detail="Item not found")
     return item
+
+
+@router.get("/{slug}/check-owner")
+async def check_owner(
+    slug: str,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+):
+    """Return { is_owner: true } if the authenticated user owns this list. For owner banner on public page."""
+    result = await db.execute(
+        select(Wishlist).where(Wishlist.slug == slug, Wishlist.user_id == current_user.id)
+    )
+    wl = result.scalar_one_or_none()
+    return {"is_owner": wl is not None}
 
 
 @router.get("/{slug}/social")
@@ -175,6 +190,12 @@ async def reserve_item(
     )
     db.add(r)
     await db.commit()
+    res_count = await db.execute(select(func.count(Reservation.id)).where(Reservation.item_id == item_id))
+    await ws_manager.broadcast(slug, {
+        "type": "gift_reserved",
+        "item_id": item_id,
+        "reserved_count": res_count.scalar() or 0,
+    })
     return {"ok": True}
 
 
@@ -197,6 +218,7 @@ async def unreserve_item(
     if r:
         await db.delete(r)
         await db.commit()
+        await ws_manager.broadcast(slug, {"type": "gift_unreserved", "item_id": item_id})
     return {"ok": True}
 
 
@@ -223,4 +245,17 @@ async def contribute_item(
     )
     db.add(c)
     await db.commit()
+    contrib_sum = await db.execute(
+        select(func.coalesce(func.sum(Contribution.amount), 0)).where(Contribution.item_id == item_id)
+    )
+    total = contrib_sum.scalar() or Decimal("0")
+    pct = None
+    if item.target_amount and item.target_amount > 0:
+        pct = round(float(total / item.target_amount * 100), 1)
+    await ws_manager.broadcast(slug, {
+        "type": "contribution_added",
+        "item_id": item_id,
+        "total_amount": float(total),
+        "percentage": pct,
+    })
     return {"ok": True}
