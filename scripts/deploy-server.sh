@@ -77,7 +77,7 @@ Type=simple
 User=root
 WorkingDirectory=$APP_DIR/backend
 Environment=PATH=$APP_DIR/backend/.venv/bin
-ExecStart=$APP_DIR/backend/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000
+ExecStart=$APP_DIR/backend/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8010
 Restart=always
 RestartSec=3
 
@@ -143,18 +143,18 @@ server {
         proxy_set_header X-Forwarded-Proto \$scheme;
     }
     location /api/ {
-        proxy_pass http://127.0.0.1:8000/api/;
+        proxy_pass http://127.0.0.1:8010/api/;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
     }
     location /uploads/ {
-        proxy_pass http://127.0.0.1:8000/uploads/;
+        proxy_pass http://127.0.0.1:8010/uploads/;
         proxy_set_header Host \$host;
     }
     location /ws/ {
-        proxy_pass http://127.0.0.1:8000/ws/;
+        proxy_pass http://127.0.0.1:8010/ws/;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";
