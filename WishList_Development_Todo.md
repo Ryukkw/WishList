@@ -145,7 +145,7 @@ when- [x] Empty public list: “Список пока пуст — именин�
 - [x] Loading skeletons for data-fetching states.
 - [x] Error boundaries and friendly error pages.
 - [x] 404 for unknown slug: “Такой вишлист не найден — может, ссылка устарела?”
-- [ ] Smooth page transitions.
+- [x] Smooth page transitions.
 - [x] Toasts: “Успешно зарезервировано”, “Вклад добавлен”, etc.
 - [ ] Full flow test: register → create list → add items (with scrape) → share link → reserve as guest → confirm owner sees no names.
 
