@@ -1,24 +1,35 @@
 # Deploy WishList on your server
 
-## 1. Copy the project to the server
+Repo: **https://github.com/Ryukkw/WishList**
 
-From your laptop (project root):
+## 1. SSH to the server and clone
 
 ```bash
-# Option A: clone from Git
-ssh root@85.239.34.243 "mkdir -p /opt && cd /opt && git clone https://github.com/YOUR_USER/WishList.git wishlist"
+ssh root@85.239.34.243
+```
 
-# Option B: rsync (no git on server)
-rsync -avz --exclude node_modules --exclude .next --exclude backend/.venv --exclude .git . root@85.239.34.243:/opt/wishlist/
+On the server:
+
+```bash
+apt-get update && apt-get install -y git
+mkdir -p /opt && cd /opt
+git clone https://github.com/Ryukkw/WishList.git wishlist
+cd wishlist
 ```
 
 ## 2. Run the deploy script
 
 ```bash
-ssh root@85.239.34.243
-cd /opt/wishlist
 chmod +x scripts/deploy-server.sh
 sudo bash scripts/deploy-server.sh
+```
+
+(Or from your laptop in one go: `ssh root@85.239.34.243 "cd /opt && git clone https://github.com/Ryukkw/WishList.git wishlist && cd wishlist && chmod +x scripts/deploy-server.sh && sudo bash scripts/deploy-server.sh"`)
+
+**Alternative: copy via rsync** (from your laptop, project root):
+
+```bash
+rsync -avz --exclude node_modules --exclude .next --exclude backend/.venv --exclude .git . root@85.239.34.243:/opt/wishlist/
 ```
 
 Optional (set before running the script):

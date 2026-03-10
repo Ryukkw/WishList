@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
 import { notFound } from "next/navigation";
 import { PublicListClient } from "./PublicListClient";
-import { authOptions } from "../../api/auth/[...nextauth]/route";
+import { authOptions } from "../../api/auth/[...nextauth]/auth-options";
 import { resolveImageUrl } from "@/lib/imageUrl";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";

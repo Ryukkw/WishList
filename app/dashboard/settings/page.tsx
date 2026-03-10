@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { authOptions } from "../../api/auth/[...nextauth]/route";
+import { authOptions } from "../../api/auth/[...nextauth]/auth-options";
 import { SettingsClient } from "./SettingsClient";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";

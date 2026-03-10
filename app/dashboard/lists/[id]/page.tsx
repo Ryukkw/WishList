@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
-import { authOptions } from "../../../api/auth/[...nextauth]/route";
+import { authOptions } from "../../../api/auth/[...nextauth]/auth-options";
 import { WishlistEditorClient } from "./WishlistEditorClient";
 import { Button } from "@/components/ui";
 

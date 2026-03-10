@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { getServerSession } from "next-auth";
-import { authOptions } from "./api/auth/[...nextauth]/route";
+import { authOptions } from "./api/auth/[...nextauth]/auth-options";
 import { Button } from "@/components/ui";
 
 export default async function Home() {
