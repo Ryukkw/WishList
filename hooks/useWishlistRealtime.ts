@@ -97,7 +97,7 @@ export function useWishlistRealtime(
       ws.onmessage = (e) => {
         if (!mounted) return;
         try {
-          const data = JSON.parse(e.data) as RealtimeEvent & { type?: string };
+          const data = JSON.parse(e.data) as { type?: string };
           if (data.type && data.type !== "connected") {
             setLastEvent(data as RealtimeEvent);
             onEventRef.current?.(data as RealtimeEvent);
