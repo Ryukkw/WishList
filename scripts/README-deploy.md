@@ -68,4 +68,4 @@ apt install -y certbot python3-certbot-nginx
 certbot --nginx -d 6693237-xl58731.twc1.net
 ```
 
-Then set `NEXTAUTH_URL` and `NEXT_PUBLIC_API_URL` in `.env.local` to `https://6693237-xl58731.twc1.net` and restart wishlist-web.
+Then set `NEXTAUTH_URL` and `NEXT_PUBLIC_API_URL` in `.env.local` to `https://6693237-xl58731.twc1.net`. **For registration and login to work**, set `BACKEND_URL=http://127.0.0.1:8010` in `.env.local` so the Next.js server calls the API internally instead of via the public URL. Restart wishlist-web after changing env.

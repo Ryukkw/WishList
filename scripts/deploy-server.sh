@@ -94,6 +94,7 @@ if [[ ! -f "$FRONTEND_ENV" ]]; then
   NEXTAUTH_SECRET=$(openssl rand -base64 32 2>/dev/null || echo "change-me-$(date +%s)")
   cat > "$FRONTEND_ENV" << EOF
 NEXT_PUBLIC_API_URL=$BASE_URL
+BACKEND_URL=http://127.0.0.1:8010
 NEXTAUTH_SECRET=$NEXTAUTH_SECRET
 NEXTAUTH_URL=$BASE_URL
 EOF
