@@ -9,12 +9,18 @@ class WishlistCreate(BaseModel):
     title: str
     description: str | None = None
     event_date: date | None = None
+    show_owner: bool = False  # set once at creation, cannot be changed
+    show_reserved_to_owner: bool = True  # "только мне"
+    show_reserved_to_guests: bool = False  # "всем кроме меня"
 
 
 class WishlistUpdate(BaseModel):
     title: str | None = None
     description: str | None = None
     event_date: date | None = None
+    # show_owner is not updatable (fixed at creation)
+    show_reserved_to_owner: bool | None = None
+    show_reserved_to_guests: bool | None = None
 
 
 class WishlistResponse(BaseModel):
@@ -24,6 +30,9 @@ class WishlistResponse(BaseModel):
     description: str | None
     event_date: date | None
     is_public: bool
+    show_owner: bool = False
+    show_reserved_to_owner: bool = True
+    show_reserved_to_guests: bool = False
     created_at: str
     item_count: int = 0
     reserved_count: int = 0
@@ -67,6 +76,7 @@ class WishlistItemResponse(BaseModel):
     status: str
     created_at: str
     reservation_count: int = 0
+    reserved_by: str | None = None  # guest name when item is reserved (owner view)
     contribution_total: Decimal | None = None
     contribution_percentage: float | None = None
 

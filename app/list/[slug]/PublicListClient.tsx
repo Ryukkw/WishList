@@ -3,8 +3,9 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import confetti from "canvas-confetti";
-import { Button, Card, Modal, Input, ProgressBar } from "@/components/ui";
+import { Button, Card, Modal, Input, ProgressBar, Avatar } from "@/components/ui";
 import { useWishlistRealtime, type RealtimeEvent } from "@/hooks/useWishlistRealtime";
+import { resolveImageUrl } from "@/lib/imageUrl";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 const GUEST_NAME_KEY = "wishlist_guest_name";
@@ -51,17 +52,28 @@ type Item = {
   reservation_count: number;
   contribution_total: number;
   contribution_percentage: number | null;
+  reserved_by?: string | null;
 };
 
 type Props = {
   slug: string;
   title: string;
+  description: string | null;
   eventDate: string | null;
   items: Item[];
   isOwner?: boolean;
+  ownerName?: string | null;
+  ownerAvatarUrl?: string | null;
+  showReservedToGuests?: boolean;
 };
 
-export function PublicListClient({ slug, title, eventDate, items, isOwner = false }: Props) {
+export function PublicListClient({ slug, title, description, eventDate, items, isOwner = false, ownerName = null, ownerAvatarUrl = null, showReservedToGuests = false }: Props) {
+  const [localTitle, setLocalTitle] = useState(title);
+  const [localDescription, setLocalDescription] = useState(description ?? "");
+  const [localEventDate, setLocalEventDate] = useState(eventDate);
+  const [localOwnerName, setLocalOwnerName] = useState<string | null>(ownerName ?? null);
+  const [localOwnerAvatarUrl, setLocalOwnerAvatarUrl] = useState<string | null>(ownerAvatarUrl ?? null);
+  const [localShowReservedToGuests, setLocalShowReservedToGuests] = useState(showReservedToGuests);
   const [guestName, setGuestName] = useState("");
   const [guestId, setGuestId] = useState("");
   const [nameModalOpen, setNameModalOpen] = useState(false);
@@ -75,26 +87,41 @@ export function PublicListClient({ slug, title, eventDate, items, isOwner = fals
   const [highlightItemId, setHighlightItemId] = useState<number | null>(null);
   const [deletedItemIds, setDeletedItemIds] = useState<Set<number>>(new Set());
   const [contributorNames, setContributorNames] = useState<string[]>([]);
+  const [toast, setToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    setLocalTitle(title);
+    setLocalDescription(description ?? "");
+    setLocalEventDate(eventDate);
+    setLocalOwnerName(ownerName ?? null);
+    setLocalOwnerAvatarUrl(ownerAvatarUrl ?? null);
+    setLocalShowReservedToGuests(showReservedToGuests);
+  }, [title, description, eventDate, ownerName, ownerAvatarUrl, showReservedToGuests]);
 
   useEffect(() => {
     setLocalItems(items);
   }, [items]);
 
   const handleRealtimeEvent = useCallback((event: RealtimeEvent) => {
-    setHighlightItemId(event.item_id);
-    setTimeout(() => setHighlightItemId(null), 2000);
+    const highlightId = "item_id" in event ? event.item_id : "item" in event ? event.item.id : null;
+    if (highlightId != null) {
+      setHighlightItemId(highlightId);
+      setTimeout(() => setHighlightItemId(null), 2000);
+    }
     switch (event.type) {
       case "gift_reserved":
         setLocalItems((prev) =>
           prev.map((i) =>
-            i.id === event.item_id ? { ...i, reservation_count: event.reserved_count } : i
+            i.id === event.item_id
+              ? { ...i, reservation_count: event.reserved_count, reserved_by: event.reserved_by ?? i.reserved_by }
+              : i
           )
         );
         break;
       case "gift_unreserved":
         setLocalItems((prev) =>
           prev.map((i) =>
-            i.id === event.item_id ? { ...i, reservation_count: 0 } : i
+            i.id === event.item_id ? { ...i, reservation_count: 0, reserved_by: null } : i
           )
         );
         break;
@@ -114,6 +141,65 @@ export function PublicListClient({ slug, title, eventDate, items, isOwner = fals
       case "item_deleted":
         setDeletedItemIds((prev) => new Set(prev).add(event.item_id));
         break;
+      case "item_added": {
+        const it = event.item;
+        const next = {
+          id: it.id,
+          title: it.title,
+          url: it.url,
+          price: it.price != null ? Number(it.price) : null,
+          image_url: it.image_url,
+          type: it.type,
+          target_amount: it.target_amount != null ? Number(it.target_amount) : null,
+          reservation_count: it.reservation_count ?? 0,
+          contribution_total: it.contribution_total != null ? Number(it.contribution_total) : 0,
+          contribution_percentage: it.contribution_percentage ?? null,
+          reserved_by: it.reserved_by ?? null,
+        };
+        setLocalItems((prev) => (prev.some((i) => i.id === next.id) ? prev : [...prev, next]));
+        break;
+      }
+      case "item_updated": {
+        const it = event.item;
+        setLocalItems((prev) =>
+          prev.map((i) =>
+            i.id === it.id
+              ? {
+                  ...i,
+                  title: it.title,
+                  url: it.url,
+                  price: it.price != null ? Number(it.price) : null,
+                  image_url: it.image_url,
+                  type: it.type,
+                  target_amount: it.target_amount != null ? Number(it.target_amount) : null,
+                  reservation_count: it.reservation_count ?? i.reservation_count,
+                  contribution_total: it.contribution_total != null ? Number(it.contribution_total) : i.contribution_total,
+                  contribution_percentage: it.contribution_percentage ?? i.contribution_percentage,
+                  reserved_by: it.reserved_by ?? i.reserved_by,
+                }
+              : i
+          )
+        );
+        break;
+      }
+      case "wishlist_updated":
+        if (event.title !== undefined) setLocalTitle(event.title);
+        if (event.description !== undefined) setLocalDescription(event.description ?? "");
+        if (event.event_date !== undefined) setLocalEventDate(event.event_date);
+        if (event.owner_name !== undefined) setLocalOwnerName(event.owner_name ?? null);
+        if (event.owner_avatar_url !== undefined) setLocalOwnerAvatarUrl(event.owner_avatar_url ?? null);
+        if (event.show_reserved_to_guests !== undefined) setLocalShowReservedToGuests(event.show_reserved_to_guests);
+        break;
+      case "items_reordered": {
+        const ids = event.item_ids;
+        setLocalItems((prev) => {
+          const byId = new Map(prev.map((i) => [i.id, i]));
+          const ordered = ids.map((id) => byId.get(id)).filter(Boolean) as Item[];
+          const rest = prev.filter((i) => !ids.includes(i.id));
+          return ordered.length > 0 ? [...ordered, ...rest] : prev;
+        });
+        break;
+      }
     }
   }, []);
 
@@ -191,6 +277,8 @@ export function PublicListClient({ slug, title, eventDate, items, isOwner = fals
         )
       );
       confetti({ particleCount: 80, spread: 60, origin: { y: 0.7 } });
+      setToast("Успешно зарезервировано");
+      setTimeout(() => setToast(null), 2500);
     } catch {
       setError("Ошибка сети");
     }
@@ -248,6 +336,8 @@ export function PublicListClient({ slug, title, eventDate, items, isOwner = fals
       }
       setContributeItem(null);
       setContribAmount("");
+      setToast("Вклад добавлен");
+      setTimeout(() => setToast(null), 2500);
       // Don't update localItems here — WebSocket contribution_added will update it.
       // Otherwise we'd add the amount twice (optimistic + WS from same action).
     } catch {
@@ -258,6 +348,11 @@ export function PublicListClient({ slug, title, eventDate, items, isOwner = fals
 
   return (
     <>
+      {toast && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[60] py-3 px-5 rounded-lg bg-[#8BAF8B] text-white font-sans font-medium shadow-lg" role="status">
+          {toast}
+        </div>
+      )}
       <Modal open={nameModalOpen} onClose={() => {}} title="Как тебя зовут?">
         <p className="text-charcoal/70 text-sm mb-3">
           Чтобы зарезервировать подарок или скинуться, введи имя — так друзья не перепутают.
@@ -353,15 +448,36 @@ export function PublicListClient({ slug, title, eventDate, items, isOwner = fals
           <p className="mb-2 text-xs text-[#1c1c1e]/50 font-sans">обновляется…</p>
         )}
         <header className="mb-8">
-          <h1 className="font-display text-3xl text-charcoal">{title}</h1>
-          {eventDate && (
+          <h1 className="font-display text-3xl text-charcoal">{localTitle}</h1>
+          <div className="flex items-center gap-3 mt-3 p-3 rounded-xl bg-white/60 border border-charcoal/8">
+            <Avatar
+              src={resolveImageUrl(localOwnerAvatarUrl, API_URL)}
+              name={localOwnerName || undefined}
+              size="lg"
+            />
+            <div>
+              <p className="text-xs font-sans text-charcoal/50 uppercase tracking-wide">
+                Список от
+              </p>
+              <p className="font-sans font-medium text-charcoal">
+                {localOwnerName || "именинника"}
+              </p>
+            </div>
+          </div>
+          {localEventDate && (
             <p className="text-charcoal/60 font-sans mt-1">
-              {new Date(eventDate).toLocaleDateString("ru-RU", {
+              {new Date(localEventDate).toLocaleDateString("ru-RU", {
                 day: "numeric",
                 month: "long",
                 year: "numeric",
               })}
             </p>
+          )}
+          {localDescription != null && localDescription.trim() !== "" && (
+            <section className="mt-3">
+              <h2 className="text-sm font-medium text-charcoal/70 font-sans mb-0.5">Описание</h2>
+              <p className="text-charcoal/80 font-sans text-sm whitespace-pre-wrap">{localDescription.trim()}</p>
+            </section>
           )}
         </header>
 
@@ -382,7 +498,7 @@ export function PublicListClient({ slug, title, eventDate, items, isOwner = fals
                     <div className="flex gap-4">
                       {item.image_url && (
                         <img
-                          src={item.image_url}
+                          src={resolveImageUrl(item.image_url, API_URL) ?? ""}
                           alt=""
                           className="w-20 h-20 object-cover rounded-lg flex-shrink-0 opacity-60"
                         />
@@ -398,7 +514,7 @@ export function PublicListClient({ slug, title, eventDate, items, isOwner = fals
                   <div className="flex gap-4">
                     {item.image_url && (
                       <img
-                        src={item.image_url}
+                        src={resolveImageUrl(item.image_url, API_URL) ?? ""}
                         alt=""
                         className="w-20 h-20 object-cover rounded-lg flex-shrink-0"
                       />
@@ -425,7 +541,11 @@ export function PublicListClient({ slug, title, eventDate, items, isOwner = fals
                                 </Button>
                               </div>
                             ) : (
-                              <p className="text-sm text-charcoal/50 mt-2">Уже занят</p>
+                              <p className="text-sm text-charcoal/50 mt-2">
+                                {localShowReservedToGuests && item.reserved_by
+                                  ? `Зарезервировано — ${item.reserved_by}`
+                                  : "Уже занят"}
+                              </p>
                             )
                           ) : (
                             <Button

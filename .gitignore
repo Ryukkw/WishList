@@ -27,3 +27,6 @@ htmlcov/
 
 # Alembic
 backend/alembic/versions/*.pyc
+
+# Uploaded files (avatars, item images)
+backend/uploads/

@@ -28,6 +28,9 @@ class Wishlist(Base):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     event_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     is_public: Mapped[bool] = mapped_column(default=True)
+    show_owner: Mapped[bool] = mapped_column(default=False)  # set at creation only: who created list
+    show_reserved_to_owner: Mapped[bool] = mapped_column(default=True)  # "только мне" — creator sees who reserved
+    show_reserved_to_guests: Mapped[bool] = mapped_column(default=False)  # "всем кроме меня" — guests see who reserved
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     user: Mapped["User"] = relationship("User", back_populates="wishlists")

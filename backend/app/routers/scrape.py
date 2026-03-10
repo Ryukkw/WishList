@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
+from app.rate_limit import rate_limit_scrape
 from app.scraper import scrape_url
 
 router = APIRouter(prefix="/api", tags=["scrape"])
@@ -17,7 +18,7 @@ class ScrapeResponse(BaseModel):
     description: str | None
 
 
-@router.post("/scrape", response_model=ScrapeResponse)
+@router.post("/scrape", response_model=ScrapeResponse, dependencies=[Depends(rate_limit_scrape)])
 async def scrape(scrape_req: ScrapeRequest):
     url = scrape_req.url.strip()
     if not url or not url.startswith(("http://", "https://")):

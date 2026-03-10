@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Playfair_Display, DM_Sans } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
+import { PageTransition } from "./PageTransition";
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -27,7 +28,9 @@ export default function RootLayout({
   return (
     <html lang="ru" className={`${playfair.variable} ${dmSans.variable}`}>
       <body className="font-sans antialiased bg-cream text-charcoal">
-        <Providers>{children}</Providers>
+        <Providers>
+          <PageTransition>{children}</PageTransition>
+        </Providers>
       </body>
     </html>
   );

@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth import get_db, get_current_user, get_current_user_optional
 from app.models import User, Wishlist, WishlistItem, Reservation, Contribution
 from app.models.wishlist import ItemStatus, ItemType
+from app.rate_limit import rate_limit_public_post
 from app.schemas.public import ReserveRequest, UnreserveRequest, ContributeRequest
 from app.websocket import manager as ws_manager
 
@@ -33,10 +34,28 @@ async def get_public_wishlist(
         .order_by(WishlistItem.position, WishlistItem.id)
     )
     items = items_result.scalars().all()
-    # Aggregated stats per item (no guest names)
+    show_owner = getattr(wl, "show_owner", False)
+    show_reserved_to_guests = getattr(wl, "show_reserved_to_guests", False)
+    show_who_reserved_guests = show_owner and show_reserved_to_guests
+    # Owner name and avatar: real when show_owner, else generic so avatar/line always show
+    if show_owner:
+        user_result = await db.execute(select(User).where(User.id == wl.user_id))
+        owner = user_result.scalar_one_or_none()
+        owner_name = (owner.name or owner.email) if owner else None
+        owner_avatar_url = owner.avatar_url if owner else None
+    else:
+        owner_name = "Именинник"  # generic label so "Список от" + avatar placeholder still render
+        owner_avatar_url = None
     items_out = []
     for item in items:
         res_count = await db.execute(select(func.count(Reservation.id)).where(Reservation.item_id == item.id))
+        r_count = res_count.scalar() or 0
+        reserved_by = None
+        if r_count > 0 and show_who_reserved_guests:
+            res_row = await db.execute(
+                select(Reservation.guest_name).where(Reservation.item_id == item.id).limit(1)
+            )
+            reserved_by = res_row.scalar_one_or_none()
         contrib_sum = await db.execute(
             select(func.coalesce(func.sum(Contribution.amount), 0)).where(Contribution.item_id == item.id)
         )
@@ -44,7 +63,7 @@ async def get_public_wishlist(
         pct = None
         if item.target_amount and item.target_amount > 0:
             pct = round(float(total / item.target_amount * 100), 1)
-        items_out.append({
+        item_out = {
             "id": item.id,
             "title": item.title,
             "url": item.url,
@@ -54,18 +73,25 @@ async def get_public_wishlist(
             "type": item.type.value,
             "target_amount": float(item.target_amount) if item.target_amount else None,
             "position": item.position,
-            "reservation_count": res_count.scalar() or 0,
+            "reservation_count": r_count,
             "contribution_total": float(total),
             "contribution_percentage": pct,
-        })
-    return {
+        }
+        if reserved_by is not None:
+            item_out["reserved_by"] = reserved_by
+        items_out.append(item_out)
+    out = {
         "id": wl.id,
         "title": wl.title,
         "slug": wl.slug,
         "description": wl.description,
         "event_date": wl.event_date.isoformat() if wl.event_date else None,
         "items": items_out,
+        "owner_name": owner_name,
+        "owner_avatar_url": owner_avatar_url,
+        "show_reserved_to_guests": show_reserved_to_guests,
     }
+    return out
 
 
 async def _get_wishlist_by_slug(slug: str, db: AsyncSession) -> Wishlist:
@@ -164,7 +190,7 @@ async def get_public_wishlist_social(
     }
 
 
-@router.post("/{slug}/items/{item_id}/reserve")
+@router.post("/{slug}/items/{item_id}/reserve", dependencies=[Depends(rate_limit_public_post)])
 async def reserve_item(
     slug: str,
     item_id: int,
@@ -195,11 +221,12 @@ async def reserve_item(
         "type": "gift_reserved",
         "item_id": item_id,
         "reserved_count": res_count.scalar() or 0,
+        "reserved_by": r.guest_name,
     })
     return {"ok": True}
 
 
-@router.delete("/{slug}/items/{item_id}/reserve")
+@router.delete("/{slug}/items/{item_id}/reserve", dependencies=[Depends(rate_limit_public_post)])
 async def unreserve_item(
     slug: str,
     item_id: int,
@@ -222,7 +249,7 @@ async def unreserve_item(
     return {"ok": True}
 
 
-@router.post("/{slug}/items/{item_id}/contribute")
+@router.post("/{slug}/items/{item_id}/contribute", dependencies=[Depends(rate_limit_public_post)])
 async def contribute_item(
     slug: str,
     item_id: int,

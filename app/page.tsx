@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { getServerSession } from "next-auth";
 import { authOptions } from "./api/auth/[...nextauth]/route";
 import { Button } from "@/components/ui";
@@ -33,32 +34,32 @@ export default async function Home() {
       </section>
 
       <section className="max-w-5xl mx-auto px-6 py-16 md:py-24 border-t border-charcoal/8">
-        <div className="grid md:grid-cols-3 gap-10 md:gap-12">
+        <div className="grid md:grid-cols-3 gap-12 md:gap-16">
           <div className="text-center">
-            <div className="w-14 h-14 mx-auto rounded-2xl bg-sage/20 flex items-center justify-center text-2xl">
-              🎁
+            <div className="w-36 h-36 mx-auto rounded-[2rem] overflow-hidden bg-sage/10 flex items-center justify-center shadow-lg">
+              <Image src="/present.png" alt="" width={160} height={160} className="object-cover w-full h-full" />
             </div>
-            <h2 className="font-display text-xl text-charcoal mt-4">Один список — много поводов</h2>
-            <p className="mt-2 text-charcoal/70 font-sans text-sm">
-              День рождения, свадьба, Новый год. Создай вишлист, добавь ссылки на подарки — друзья зарезервируют или скинутся без дублей.
+            <h2 className="font-display text-xl text-charcoal mt-4">Один список на все случаи</h2>
+            <p className="mt-2 text-charcoal/70 font-sans text-sm leading-relaxed">
+              День рождения, свадьба, Новый год или просто «хочу порадовать себя». Собери все идеи подарков в одном аккуратном списке вместо десятка заметок и чатов.
             </p>
           </div>
           <div className="text-center">
-            <div className="w-14 h-14 mx-auto rounded-2xl bg-coral/10 flex items-center justify-center text-2xl">
-              🙈
+            <div className="w-36 h-36 mx-auto rounded-[2rem] overflow-hidden bg-coral/5 flex items-center justify-center shadow-lg">
+              <Image src="/anonymous-icon.png" alt="" width={160} height={160} className="object-cover w-full h-full" />
             </div>
-            <h2 className="font-display text-xl text-charcoal mt-4">Кто что взял — только ты не видишь</h2>
-            <p className="mt-2 text-charcoal/70 font-sans text-sm">
-              Ты видишь только «3 подарка зарезервировано» и «собрано 80%». Имена гостей скрыты, чтобы сюрприз остался сюрпризом.
+            <h2 className="font-display text-xl text-charcoal mt-4">Друзья координируются, сюрприз живёт</h2>
+            <p className="mt-2 text-charcoal/70 font-sans text-sm leading-relaxed">
+              Гости видят, что уже забрали, а что свободно, и могут скинуться на дорогой подарок. Ты видишь только цифры — без имён, чтобы не угадывать, кто что подарит.
             </p>
           </div>
           <div className="text-center">
-            <div className="w-14 h-14 mx-auto rounded-2xl bg-charcoal/5 flex items-center justify-center text-2xl">
-              🔗
+            <div className="w-36 h-36 mx-auto rounded-[2rem] overflow-hidden bg-charcoal/5 flex items-center justify-center shadow-lg">
+              <Image src="/share.png" alt="" width={160} height={160} className="object-cover w-full h-full" />
             </div>
-            <h2 className="font-display text-xl text-charcoal mt-4">Поделись ссылкой</h2>
-            <p className="mt-2 text-charcoal/70 font-sans text-sm">
-              Одна ссылка — все друзья заходят без регистрации, вводят имя и забирают подарок или скидываются. Удобно в мессенджерах.
+            <h2 className="font-display text-xl text-charcoal mt-4">Работает по одной ссылке</h2>
+            <p className="mt-2 text-charcoal/70 font-sans text-sm leading-relaxed">
+              Отправь ссылку в общий чат — друзья заходят без регистрации, вводят своё имя и сразу резервируют подарки. Красиво открывается и в мессенджерах, и в браузере.
             </p>
           </div>
         </div>

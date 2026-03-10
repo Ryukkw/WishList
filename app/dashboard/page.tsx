@@ -3,8 +3,9 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { authOptions } from "../api/auth/[...nextauth]/route";
 import { CreateWishlistButton } from "./CreateWishlistButton";
-import { ShareListButton } from "./ShareListButton";
-import { Button, Card, Avatar } from "@/components/ui";
+import { DashboardWishlistCard } from "./DashboardWishlistCard";
+import { Avatar } from "@/components/ui";
+import { resolveImageUrl } from "@/lib/imageUrl";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -13,6 +14,19 @@ export default async function DashboardPage() {
   if (!session) redirect("/auth/signin?callbackUrl=/dashboard");
   const token = (session as { backend_token?: string }).backend_token;
   if (!token) redirect("/auth/signin?callbackUrl=/dashboard");
+
+  let profile: { name?: string | null; email?: string; avatar_url?: string | null } | null = null;
+  try {
+    const meRes = await fetch(`${API_URL}/api/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    if (meRes.ok) profile = await meRes.json();
+  } catch {
+    // ignore
+  }
+
+  const displayName = profile?.name?.trim() || session.user?.name || session.user?.email || "";
 
   let wishlists: { id: number; title: string; slug: string; event_date: string | null; item_count: number; reserved_count: number }[] = [];
   try {
@@ -31,10 +45,20 @@ export default async function DashboardPage() {
         <div className="max-w-4xl mx-auto px-6 py-4 flex justify-between items-center">
           <h1 className="font-display text-xl text-charcoal">Дашборд</h1>
           <div className="flex items-center gap-3">
-            <Avatar name={session.user?.name || session.user?.email || ""} size="sm" />
+            <Avatar
+              src={resolveImageUrl(profile?.avatar_url ?? null, API_URL) ?? undefined}
+              name={displayName}
+              size="sm"
+            />
             <span className="text-sm text-charcoal/70 font-sans hidden sm:inline">
-              {session.user?.email}
+              {displayName}
             </span>
+            <Link
+              href="/dashboard/settings"
+              className="text-sm text-charcoal/70 hover:text-charcoal font-sans"
+            >
+              Настройки
+            </Link>
             <a
               href="/api/auth/signout"
               className="text-sm text-coral hover:underline font-sans"
@@ -75,17 +99,7 @@ export default async function DashboardPage() {
             <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {wishlists.map((wl) => (
                 <li key={wl.id}>
-                  <Link href={`/dashboard/lists/${wl.id}`} className="block">
-                    <Card hover className="p-5 flex flex-col gap-3">
-                      <div>
-                        <span className="font-display text-lg text-charcoal">{wl.title}</span>
-                        <span className="block text-sm text-charcoal/60 mt-1 font-sans">
-                          {wl.item_count} позиций · зарезервировано {wl.reserved_count}
-                        </span>
-                      </div>
-                      <ShareListButton slug={wl.slug} />
-                    </Card>
-                  </Link>
+                  <DashboardWishlistCard wl={wl} token={token} />
                 </li>
               ))}
             </ul>

@@ -1,3 +1,7 @@
+"use client";
+
+import { useState } from "react";
+
 interface AvatarProps {
   src?: string | null;
   name?: string | null;
@@ -18,13 +22,16 @@ function initial(name: string): string {
 }
 
 export function Avatar({ src, name, size = "md", className = "" }: AvatarProps) {
+  const [imgFailed, setImgFailed] = useState(false);
   const sizeClass = sizeClasses[size];
-  if (src) {
+  const showImg = src && !imgFailed;
+  if (showImg) {
     return (
       <img
         src={src}
         alt={name || ""}
         className={`rounded-full object-cover ${sizeClass} ${className}`}
+        onError={() => setImgFailed(true)}
       />
     );
   }

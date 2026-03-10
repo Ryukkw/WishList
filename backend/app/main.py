@@ -1,8 +1,11 @@
+from pathlib import Path
+
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
-from app.routers import auth, wishlists, public, scrape
+from app.routers import auth, wishlists, public, scrape, upload
 from app.websocket import manager as ws_manager
 
 app = FastAPI(title="WishList API", version="0.1.0")
@@ -19,6 +22,14 @@ app.include_router(auth.router)
 app.include_router(wishlists.router)
 app.include_router(public.router)
 app.include_router(scrape.router)
+app.include_router(upload.router)
+
+# Ensure upload dirs exist and serve uploaded files
+upload_dir = Path(settings.upload_dir)
+upload_dir.mkdir(parents=True, exist_ok=True)
+(upload_dir / "avatars").mkdir(parents=True, exist_ok=True)
+(upload_dir / "items").mkdir(parents=True, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=str(upload_dir)), name="uploads")
 
 
 @app.get("/health")
@@ -30,6 +41,7 @@ def health():
 async def websocket_list(websocket: WebSocket, slug: str):
     await ws_manager.connect(slug, websocket)
     try:
+        await websocket.send_json({"type": "connected", "slug": slug})
         while True:
             await websocket.receive_text()
     except WebSocketDisconnect:

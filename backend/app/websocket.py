@@ -5,10 +5,17 @@ Tracks connections per slug and broadcasts events to all viewers of a list.
 import json
 import logging
 from collections import defaultdict
+from decimal import Decimal
 
 from fastapi import WebSocket
 
 logger = logging.getLogger(__name__)
+
+
+def _json_default(obj: object) -> object:
+    if isinstance(obj, Decimal):
+        return float(obj)
+    raise TypeError(f"Object of type {obj.__class__.__name__!r} is not JSON serializable")
 
 
 class ConnectionManager:
@@ -30,7 +37,7 @@ class ConnectionManager:
     async def broadcast(self, slug: str, message: dict) -> None:
         if slug not in self._rooms:
             return
-        payload = json.dumps(message, ensure_ascii=False)
+        payload = json.dumps(message, ensure_ascii=False, default=_json_default)
         dead: list[WebSocket] = []
         for ws in self._rooms[slug]:
             try:

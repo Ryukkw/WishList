@@ -51,6 +51,9 @@ def wishlist_to_response(wl: Wishlist, item_count: int = 0, reserved_count: int 
         description=wl.description,
         event_date=wl.event_date,
         is_public=wl.is_public,
+        show_owner=getattr(wl, "show_owner", False),
+        show_reserved_to_owner=getattr(wl, "show_reserved_to_owner", True),
+        show_reserved_to_guests=getattr(wl, "show_reserved_to_guests", False),
         created_at=wl.created_at.isoformat() if wl.created_at else "",
         item_count=item_count,
         reserved_count=reserved_count,
@@ -61,6 +64,7 @@ def wishlist_to_response(wl: Wishlist, item_count: int = 0, reserved_count: int 
 def item_to_response(
     item: WishlistItem,
     reservation_count: int = 0,
+    reserved_by: str | None = None,
     contribution_total: Decimal | None = None,
     contribution_percentage: float | None = None,
 ) -> WishlistItemResponse:
@@ -78,6 +82,7 @@ def item_to_response(
         status=item.status.value,
         created_at=item.created_at.isoformat() if item.created_at else "",
         reservation_count=reservation_count,
+        reserved_by=reserved_by,
         contribution_total=contribution_total,
         contribution_percentage=contribution_percentage,
     )
@@ -129,6 +134,9 @@ async def create_wishlist(
         slug=slug,
         description=body.description,
         event_date=body.event_date,
+        show_owner=body.show_owner,
+        show_reserved_to_owner=body.show_reserved_to_owner,
+        show_reserved_to_guests=body.show_reserved_to_guests,
     )
     db.add(wl)
     await db.commit()
@@ -174,8 +182,32 @@ async def update_wishlist(
         wl.description = body.description
     if body.event_date is not None:
         wl.event_date = body.event_date
+    # show_owner is not updatable (fixed at creation)
+    if body.show_reserved_to_owner is not None:
+        wl.show_reserved_to_owner = body.show_reserved_to_owner
+    if body.show_reserved_to_guests is not None:
+        wl.show_reserved_to_guests = body.show_reserved_to_guests
     await db.commit()
     await db.refresh(wl)
+    # Broadcast so shared-link viewers see description/title/date updates in real time
+    payload = {
+        "type": "wishlist_updated",
+        "title": wl.title,
+        "description": wl.description,
+        "event_date": wl.event_date.isoformat() if wl.event_date else None,
+        "show_owner": getattr(wl, "show_owner", False),
+        "show_reserved_to_owner": getattr(wl, "show_reserved_to_owner", True),
+        "show_reserved_to_guests": getattr(wl, "show_reserved_to_guests", False),
+    }
+    if getattr(wl, "show_owner", False):
+        user_result = await db.execute(select(User).where(User.id == wl.user_id))
+        owner = user_result.scalar_one_or_none()
+        payload["owner_name"] = (owner.name or owner.email) if owner else None
+        payload["owner_avatar_url"] = owner.avatar_url if owner else None
+    else:
+        payload["owner_name"] = None
+        payload["owner_avatar_url"] = None
+    await ws_manager.broadcast(wl.slug, payload)
     items_result = await db.execute(
         select(func.count(WishlistItem.id)).where(
             WishlistItem.wishlist_id == wl.id, WishlistItem.status == ItemStatus.active
@@ -213,14 +245,24 @@ async def list_items(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
-    await get_wishlist_owned(wishlist_id, current_user, db)
+    wl = await get_wishlist_owned(wishlist_id, current_user, db)
+    show_who_reserved = getattr(wl, "show_owner", False) and getattr(wl, "show_reserved_to_owner", True)
     result = await db.execute(
-        select(WishlistItem).where(WishlistItem.wishlist_id == wishlist_id).order_by(WishlistItem.position, WishlistItem.id)
+        select(WishlistItem)
+        .where(WishlistItem.wishlist_id == wishlist_id, WishlistItem.status == ItemStatus.active)
+        .order_by(WishlistItem.position, WishlistItem.id)
     )
     items = result.scalars().all()
     out = []
     for item in items:
         res_count = await db.execute(select(func.count(Reservation.id)).where(Reservation.item_id == item.id))
+        r_count = res_count.scalar() or 0
+        reserved_by: str | None = None
+        if r_count > 0 and show_who_reserved:
+            res_row = await db.execute(
+                select(Reservation.guest_name).where(Reservation.item_id == item.id).limit(1)
+            )
+            reserved_by = res_row.scalar_one_or_none()
         contrib_sum = await db.execute(select(func.coalesce(func.sum(Contribution.amount), 0)).where(Contribution.item_id == item.id))
         total = contrib_sum.scalar() or Decimal("0")
         pct = None
@@ -228,7 +270,8 @@ async def list_items(
             pct = float(total / item.target_amount * 100)
         out.append(item_to_response(
             item,
-            reservation_count=res_count.scalar() or 0,
+            reservation_count=r_count,
+            reserved_by=reserved_by,
             contribution_total=total,
             contribution_percentage=round(pct, 1) if pct is not None else None,
         ))
@@ -259,7 +302,9 @@ async def add_item(
     db.add(item)
     await db.commit()
     await db.refresh(item)
-    return item_to_response(item)
+    resp = item_to_response(item)
+    await ws_manager.broadcast(wl.slug, {"type": "item_added", "item": resp.model_dump()})
+    return resp
 
 
 @router.put("/{wishlist_id}/items/{item_id}", response_model=WishlistItemResponse)
@@ -270,7 +315,7 @@ async def update_item(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
-    await get_wishlist_owned(wishlist_id, current_user, db)
+    wl = await get_wishlist_owned(wishlist_id, current_user, db)
     result = await db.execute(select(WishlistItem).where(WishlistItem.id == item_id, WishlistItem.wishlist_id == wishlist_id))
     item = result.scalar_one_or_none()
     if not item:
@@ -292,17 +337,27 @@ async def update_item(
     await db.commit()
     await db.refresh(item)
     res_count = await db.execute(select(func.count(Reservation.id)).where(Reservation.item_id == item.id))
+    r_count = res_count.scalar() or 0
+    reserved_by: str | None = None
+    if r_count > 0:
+        res_row = await db.execute(
+            select(Reservation.guest_name).where(Reservation.item_id == item.id).limit(1)
+        )
+        reserved_by = res_row.scalar_one_or_none()
     contrib_sum = await db.execute(select(func.coalesce(func.sum(Contribution.amount), 0)).where(Contribution.item_id == item.id))
     total = contrib_sum.scalar() or Decimal("0")
     pct = None
     if item.target_amount and item.target_amount > 0:
         pct = float(total / item.target_amount * 100)
-    return item_to_response(
+    resp = item_to_response(
         item,
-        reservation_count=res_count.scalar() or 0,
+        reservation_count=r_count,
+        reserved_by=reserved_by,
         contribution_total=total,
         contribution_percentage=round(pct, 1) if pct is not None else None,
     )
+    await ws_manager.broadcast(wl.slug, {"type": "item_updated", "item": resp.model_dump()})
+    return resp
 
 
 @router.delete("/{wishlist_id}/items/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -329,11 +384,12 @@ async def reorder_items(
     current_user: Annotated[User, Depends(get_current_user)],
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
-    await get_wishlist_owned(wishlist_id, current_user, db)
+    wl = await get_wishlist_owned(wishlist_id, current_user, db)
     for pos, item_id in enumerate(body.item_ids):
         result = await db.execute(select(WishlistItem).where(WishlistItem.id == item_id, WishlistItem.wishlist_id == wishlist_id))
         item = result.scalar_one_or_none()
         if item:
             item.position = pos
     await db.commit()
+    await ws_manager.broadcast(wl.slug, {"type": "items_reordered", "item_ids": body.item_ids})
     return None

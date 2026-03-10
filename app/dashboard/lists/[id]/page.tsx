@@ -38,6 +38,9 @@ export default async function WishlistEditorPage({
     slug: string;
     description: string | null;
     event_date: string | null;
+    show_owner: boolean;
+    show_reserved_to_owner: boolean;
+    show_reserved_to_guests: boolean;
   };
   const items = itemsRes.ok
     ? ((await itemsRes.json()) as {
@@ -51,6 +54,7 @@ export default async function WishlistEditorPage({
         position: number;
         status: string;
         reservation_count: number;
+        reserved_by?: string | null;
         contribution_total: number | string | null;
         contribution_percentage: number | null;
       }[])
@@ -63,7 +67,12 @@ export default async function WishlistEditorPage({
           <Link href="/dashboard" className="text-coral hover:underline font-sans text-sm">
             ← Дашборд
           </Link>
-          <span className="text-sm text-charcoal/60 font-sans">{session.user?.email}</span>
+          <div className="flex items-center gap-3">
+            <Link href="/dashboard/settings" className="text-sm text-charcoal/60 hover:text-charcoal font-sans">
+              Настройки
+            </Link>
+            <span className="text-sm text-charcoal/60 font-sans">{session.user?.email}</span>
+          </div>
         </div>
       </header>
 
@@ -72,6 +81,11 @@ export default async function WishlistEditorPage({
           wishlistId={wishlist.id}
           slug={wishlist.slug}
           initialTitle={wishlist.title}
+          initialDescription={wishlist.description ?? ""}
+          initialEventDate={wishlist.event_date ?? ""}
+          initialShowOwner={wishlist.show_owner}
+          initialShowReservedToOwner={wishlist.show_reserved_to_owner}
+          initialShowReservedToGuests={wishlist.show_reserved_to_guests}
           initialItems={items}
           token={token}
         />

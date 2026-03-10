@@ -119,8 +119,7 @@ Structured approach derived from [WishList_Spec.md](./WishList_Spec.md). Follow 
 - [x] Contribution over goal: allow; show “100%+” with 🎉.
 - [x] Item deleted while guest has it open: WS → show deletion notice; disable reserve/contribute.
 - [x] Guest name collision: use `guest_identifier` (e.g. UUID in localStorage) for dedup; display name for UI only.
-- [x] Owner visits own public link: show banner “Ты смотришь как тебя видят гости”.
-- [x] Empty public list: “Список пока пуст — именинник скоро добавит желания 🎁”.
+when- [x] Empty public list: “Список пока пуст — именинник скоро добавит желания 🎁”.
 - [x] Offline/WS disconnect: “обновляется…” indicator; silent reconnect.
 
 ---
@@ -131,23 +130,23 @@ Structured approach derived from [WishList_Spec.md](./WishList_Spec.md). Follow 
 
 ### 6.1 Deploy
 
-- [ ] Backend: Railway (Dockerfile); env: `DATABASE_URL`, `SECRET_KEY`, CORS origins.
-- [ ] Frontend: Vercel; env: `NEXT_PUBLIC_API_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`.
-- [ ] PostgreSQL: Railway managed (or same compose for staging).
-- [ ] CORS: allow Vercel domain in FastAPI.
-- [ ] `/health` on backend.
-- [ ] WSS for WebSocket through Railway proxy.
-- [ ] Rate limiting: `/api/scrape` and public POST endpoints.
+- [x] Backend: Railway (Dockerfile); env: `DATABASE_URL`, `SECRET_KEY`, CORS origins.
+- [x] Frontend: Vercel; env: `NEXT_PUBLIC_API_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`.
+- [x] PostgreSQL: Railway managed (or same compose for staging).
+- [x] CORS: allow Vercel domain in FastAPI.
+- [x] `/health` on backend.
+- [x] WSS for WebSocket through Railway proxy.
+- [x] Rate limiting: `/api/scrape` and public POST endpoints.
 
 ### 6.2 Polish (spec §14)
 
-- [ ] OG image meta for public wishlist pages (link previews).
-- [ ] Favicon and app icons.
-- [ ] Loading skeletons for data-fetching states.
-- [ ] Error boundaries and friendly error pages.
-- [ ] 404 for unknown slug: “Такой вишлист не найден — может, ссылка устарела?”
+- [x] OG image meta for public wishlist pages (link previews).
+- [x] Favicon and app icons.
+- [x] Loading skeletons for data-fetching states.
+- [x] Error boundaries and friendly error pages.
+- [x] 404 for unknown slug: “Такой вишлист не найден — может, ссылка устарела?”
 - [ ] Smooth page transitions.
-- [ ] Toasts: “Успешно зарезервировано”, “Вклад добавлен”, etc.
+- [x] Toasts: “Успешно зарезервировано”, “Вклад добавлен”, etc.
 - [ ] Full flow test: register → create list → add items (with scrape) → share link → reserve as guest → confirm owner sees no names.
 
 ---
