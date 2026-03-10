@@ -27,6 +27,7 @@ export type RealtimeItem = {
   position: number;
   status: string;
   reservation_count?: number;
+  reserved_by?: string | null;
   contribution_total?: number | string | null;
   contribution_percentage?: number | null;
 };
